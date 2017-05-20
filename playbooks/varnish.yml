@@ -1,0 +1,55 @@
+---
+- hosts: all
+  remote_user: root
+  vars:
+    varnish_admin_listen_host   : "127.0.0.1"
+    varnish_admin_listen_port   : "6082"
+    varnish_config_path         : "/etc/varnish"
+    varnish_limit_nofile        : 131072
+    varnish_listen_port         : "80"
+    varnish_package_name        : "varnish"
+    varnish_pidfile             : "/run/varnishd.pid"
+    varnish_storage             : "file,/var/lib/varnish/varnish_storage.bin,256M"
+    varnish_systemd_config_path : "/etc/systemd/system"
+    varnish_use_default_vcl     : true
+  tasks:
+
+  - name: Ensure Varnish config path exists
+    file:
+      path: "{{ varnish_config_path }}"
+      state: directory
+
+  - name: Install Varnish
+    apt:
+      name: "{{ varnish_package_name }}"
+      state: present
+
+  - name: Copy Varnish default VCL
+    template:
+      src: ../templates/varnish/default.vcl.j2
+      dest: "{{ varnish_config_path }}/default.vcl"
+      owner: root
+      group: root
+      mode: 0644
+    when: varnish_use_default_vcl
+    notify: restart varnish
+
+  - name: Copy Varnish configs (systemd)
+    template:
+      src: ../templates/varnish/varnish.service.j2
+      dest: "{{ varnish_systemd_config_path }}/varnish.service"
+      owner: root
+      group: root
+      mode: 0644
+    when: ansible_os_family == 'Debian'
+    notify:
+      - reload systemd
+      - restart varnish
+
+  handlers:
+
+  - name: reload systemd
+    command: systemctl daemon-reload
+
+  - name: restart varnish
+    service: name=varnish state=restarted

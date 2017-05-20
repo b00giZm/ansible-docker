@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+docker run -it --rm \
+  -v ${HOME}/.ssh/id_rsa:/root/.ssh/id_rsa \
+  -v ${HOME}/.ssh/id_rsa.pub:/root/.ssh/id_rsa.pub \
+  -v ${HOME}/.ssh/known_hosts:/root/.ssh/known_hosts \
+  -v ${PWD}/docker/rootfs/etc/ansible:/etc/ansible \
+  -v ${PWD}/playbooks:/opt/ansible/playbooks \
+  -v ${PWD}/templates:/opt/ansible/templates \
+  b00gizm/ansible-test ansible-playbook ${@}
